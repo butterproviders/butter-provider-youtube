@@ -1,10 +1,13 @@
 'use strict';
+
+var GenericProvider = require('butter-provider');
 var querystring = require('querystring');
 var request = require('request');
 var Q = require('q');
 var deferRequest = require('defer-request');
 var inherits = require('util').inherits;
 var _ = require('lodash');
+var moment = require('moment');
 
 var URL = 'https://media.ccc.de/public';
 var CCC = function (args) {
@@ -14,7 +17,7 @@ var CCC = function (args) {
         URL = args.url;
 };
 
-inherits(CCC, App.Providers.Generic);
+inherits(CCC, GenericProvider);
 
 CCC.prototype.config = {
     name: 'ccc',

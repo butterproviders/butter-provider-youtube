@@ -20,5 +20,11 @@
   "bugs": {
     "url": "https://github.com/butterproject/butter-provider-ccc/issues"
   },
-  "homepage": "https://github.com/butterproject/butter-provider-ccc#readme"
+  "homepage": "https://github.com/butterproject/butter-provider-ccc#readme",
+  "dependencies": {
+    "defer-request": "0.0.2",
+    "lodash": "^3.10.1",
+    "moment": "^2.11.1",
+    "q": "^1.4.1"
+  }
 }

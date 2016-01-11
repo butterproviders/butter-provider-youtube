@@ -63,15 +63,15 @@ var queryTorrents = function (filters) {
 };
 
 var formatElementForButter = function (data) {
-    var id = data.acronym;
+    var id = data.url.split('/').pop();
     var updated = moment(data.updated_at);
     var year = updated.year();
     var img = data.logo_url;
     return {
         type: 'show',
         _id: id,
-        imdb_id: id,
-        tvdb_id: id,
+        imdb_id: 'ccc' +id,
+        tvdb_id: 'ccc-' + data.acronym,
         title: data.title,
         year: year,
         images: {

@@ -1,6 +1,6 @@
 {
   "name": "butter-provider-ccc",
-  "version": "0.0.2",
+  "version": "0.1.0"
   "description": "A Butter provider for CCC media servers",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/butterproject/butter-provider-ccc.git"
+    "url": "git+https://github.com/butterproviders/butter-provider-ccc.git"
   },
   "keywords": [
     "ccc",
@@ -18,9 +18,9 @@
   "author": "Niv Sardi",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/butterproject/butter-provider-ccc/issues"
+    "url": "https://github.com/butterproviders/butter-provider-ccc/issues"
   },
-  "homepage": "https://github.com/butterproject/butter-provider-ccc#readme",
+  "homepage": "https://github.com/butterproviders/butter-provider-ccc#readme",
   "dependencies": {
     "defer-request": "0.0.2",
     "lodash": "^3.10.1",

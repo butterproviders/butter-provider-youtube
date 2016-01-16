@@ -1,6 +1,6 @@
 {
   "name": "butter-provider-ccc",
-  "version": "0.1.0"
+  "version": "0.1.0",
   "description": "A Butter provider for CCC media servers",
   "main": "index.js",
   "scripts": {

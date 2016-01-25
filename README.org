@@ -1,3 +1,4 @@
-This is a [[https://github.com/butterproject][Butter]] provider to access content from the http://media.ccc.de
-service (and any other CCC media sites), if you want to find more info on
-Butter Providers check the [[https://github.com/butterproject/butter-provider][Butter Provider Docs]].
+This is a [[https://github.com/butterproject][Butter]] provider to access content from any YouTube channel, it
+will present playlists as show seasons, you will need a google API key for
+this to work, if you want to find more info on Butter Providers check the
+[[https://github.com/butterproject/butter-provider][Butter Provider Docs]].

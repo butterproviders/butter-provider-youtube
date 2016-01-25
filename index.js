@@ -2,27 +2,26 @@
 
 var GenericProvider = require('butter-provider');
 var querystring = require('querystring');
-var request = require('request');
 var Q = require('q');
-var deferRequest = require('defer-request');
 var inherits = require('util').inherits;
 var _ = require('lodash');
 var moment = require('moment');
 
-var URL = 'https://media.ccc.de/public';
-var CCC = function (args) {
-    CCC.super_.call(this);
+var URL = 'https://media.youtube.de/public';
 
-    if (args.url)
-        URL = args.url;
+var YouTube = function (args) {
+    YouTube.super_.call(this);
+
+    this.videos = require('yt-channel-videos')(args.apiKey || 'AIzaSyARQAHCYNuS7qi3mUxu0pgc4FjEBkOrx3U');
+    this.channel = args.channel;
 };
 
-inherits(CCC, GenericProvider);
+inherits(YouTube, GenericProvider);
 
-CCC.prototype.config = {
-    name: 'ccc',
+YouTube.prototype.config = {
+    name: 'YouTube',
     uniqueId: 'imdb_id',
-    tabName: 'CCC',
+    tabName: 'YouTube',
     type: 'tvshow',
 };
 
@@ -53,12 +52,14 @@ var queryTorrents = function (filters) {
         params.sort = filters.sorter;
     }
 
-    return deferRequest(URL + '/conferences')
+    return this.videos.allUploads(this.channel)
         .then(function (data) {
-            return data.conferences
+            console.log(data)
+            debugger
+            return data
         })
         .catch(function (err) {
-            console.error ('CCC', 'error', err)
+            console.error ('youtube', 'error', err)
         })
 };
 
@@ -70,8 +71,8 @@ var formatElementForButter = function (data) {
     return {
         type: 'show',
         _id: id,
-        imdb_id: 'ccc' +id,
-        tvdb_id: 'ccc-' + data.acronym,
+        imdb_id: 'youtube' +id,
+        tvdb_id: 'youtube-' + data.acronym,
         title: data.title,
         year: year,
         images: {
@@ -132,7 +133,7 @@ var formatDetailForButter = function(bulk) {
     var ret =  _.extend (old_data, {
         synopsis: data.title,
         country: "",
-        network: "CCC Media",
+        network: "YouTube Media",
         status: "finished",
         num_seasons: 1,
         runtime: 30,
@@ -158,18 +159,18 @@ var queryTorrent = function (torrent_id, old_data, debug) {
         })
 };
 
-CCC.prototype.extractIds = function (items) {
+YouTube.prototype.extractIds = function (items) {
     return _.pluck(items.results, 'imdb_id');
 };
 
-CCC.prototype.fetch = function (filters) {
+YouTube.prototype.fetch = function (filters) {
     return queryTorrents(filters)
         .then(formatForButter);
 };
 
-CCC.prototype.detail = function (torrent_id, old_data, debug) {
+YouTube.prototype.detail = function (torrent_id, old_data, debug) {
     return queryTorrent(torrent_id, old_data, debug)
         .then(formatDetailForButter);
 };
 
-module.exports = CCC;
+module.exports = YouTube;

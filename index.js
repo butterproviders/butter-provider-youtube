@@ -58,6 +58,7 @@ YouTube.prototype.config = {
 };
 
 YouTube.prototype.queryTorrents = function (filters) {
+    var that = this;
     var params = {};
     var genres = '';
     params.sort = 'seeds';
@@ -84,12 +85,17 @@ YouTube.prototype.queryTorrents = function (filters) {
         params.sort = filters.sorter;
     }
 
+    if (this.fetchData)
+        return this.fetchData;
+
     return (Promise.all([this.playlists, this.channel]))
         .then(function (data) {
-            return {
+            that.fetchData = {
                 playlists: data[0],
                 channel: data[1]
             }
+
+            return that.fetchData
         })
         .catch(function (err) {
             console.error ('youtube', 'error', err)
@@ -143,75 +149,75 @@ var formatForButter = function(data) {
     }
 }
 
-var generateEventTorrents = function(event) {
-    return event
+var generatePlaylistTorrents = function(pl) {
+    return pl
 }
 
-var formatEventForButter = function(event, idx) {
-    var date = moment(event.date);
-    return {
-        torrents: generateEventTorrents(event),
-        watched: {
-            watched: false,
-        },
-        first_aired: date.unix(),
-        date_based: false,
-        overview: event.description,
-        title: event.title,
-        episode: idx,
-        season: 1,
-        tvdb_id: event.slug,
-    }
-}
-
-var formatDetailForButter = function(bulk) {
-    var id = bulk.id,
-    data = bulk.data,
-    old_data = bulk.old_data;
-
-    var updated = moment(data.updated)
-
-    var ret =  _.extend (old_data, {
-        synopsis: data.title,
-        country: "",
-        network: "YouTube Media",
-        status: "finished",
-        num_seasons: 1,
-        runtime: 30,
-        last_updated: updated.unix(),
-        __v: 0,
-        genres: ["Event", "Conference"],
-        episodes: data.events.map(formatEventForButter)
+var formatPlaylistForButter = function(pl, idx, videos) {
+    return videos.map(function (vid, vidx) {
+        var date = moment(vid.publishedAt);
+        return {
+            torrents: generatePlaylistTorrents(vid),
+            watched: {
+                watched: false,
+            },
+            first_aired: date.unix(),
+            date_based: false,
+            overview: vid.description,
+            title: vid.title,
+            episode: vidx + 1,
+            season: idx + 1,
+            tvdb_id: vid.videoId,
+        }
     })
-
-    console.error (ret)
-    return ret;
 }
-
-// Single element query
-var queryTorrent = function (torrent_id, old_data, debug) {
-    return deferRequest(URL + '/conferences/' + old_data._id)
-        .then(function (data) {
-            return {
-                id: torrent_id,
-                data: data,
-                old_data: old_data
-            }
-        })
-};
 
 YouTube.prototype.extractIds = function (items) {
     return _.pluck(items.results, 'imdb_id');
 };
+
 
 YouTube.prototype.fetch = function (filters) {
     return this.queryTorrents(filters)
         .then(formatForButter);
 };
 
-YouTube.prototype.detail = function (torrent_id, old_data, debug) {
-    return queryTorrent(torrent_id, old_data, debug)
-        .then(formatDetailForButter);
-};
+YouTube.prototype.getPlaylistsVideos = function (playlists) {
+    var that = this;
+
+    return Promise.all(playlists.map(function (pl, idx) {
+        return that.API.playlistFunctions.getVideosForPlaylist(pl.playlistId)
+            .then(function (videos) {
+                return formatPlaylistForButter(pl, idx, videos)
+            })
+    }))
+}
+
+YouTube.prototype.detail = function(id, oldData, debug) {
+    var that = this,
+        id = oldData.id,
+        data = this.fetchData;
+
+    var updated = moment(oldData.updated)
+
+    return this.getPlaylistsVideos(data.playlists)
+        .then(function (videos) {
+            return _.extend (oldData, {
+                synopsis: data.title,
+                country: "",
+                network: "YouTube Media",
+                status: "finished",
+                num_seasons: data.playlists.length,
+                runtime: 30,
+                last_updated: updated.unix(),
+                __v: 0,
+                genres: ['blah'],
+                episodes: _.flatten(videos)
+            })
+        }).then (function (data){
+            console.error (data)
+            return data;
+        })
+}
 
 module.exports = YouTube;

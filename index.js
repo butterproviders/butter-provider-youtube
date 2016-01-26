@@ -32,6 +32,9 @@ var YouTube = function (args) {
     this.API.setup(this.apiKey || 'AIzaSyARQAHCYNuS7qi3mUxu0pgc4FjEBkOrx3U')
     this.playlists = this.API.playlistFunctions.getPlaylistsForUser(this.channel)
         .then(function (playlists) {
+            if (Object.keys(that.regex).length < 1)
+                return playlists;
+            
             return _.filter(playlists, function (p) {
                 var found = _.map(that.regex, function (regex, field) {
                     var val = p[field];

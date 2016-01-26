@@ -12,20 +12,52 @@ var URL = 'https://media.youtube.de/public';
 var YouTube = function (args) {
     YouTube.super_.call(this);
 
-    this.videos = require('yt-channel-videos')(args.apiKey || 'AIzaSyARQAHCYNuS7qi3mUxu0pgc4FjEBkOrx3U');
-    this.channel = args.channel;
+    var that = this;
+    console.error ('args', args)
+    this.channel = args.channel; //&& delete(args.channel);
+    this.apiKey  = args.apiKey;  //&& delete(args.apiKey);
+    this.regex   = {}
+
+    Object.keys(args).forEach(function (k) {
+        var m = k.match('(.*)Regex');
+
+        if (! m)
+            return;
+
+        that.regex[m[1]] = new RegExp(args[k])
+    })
+
+    this.API = require('node-youtubeapi-simplifier');
+
+    this.API.setup(this.apiKey || 'AIzaSyARQAHCYNuS7qi3mUxu0pgc4FjEBkOrx3U')
+    this.playlists = this.API.playlistFunctions.getPlaylistsForUser(this.channel)
+        .then(function (playlists) {
+            return _.filter(playlists, function (p) {
+                var found = _.map(that.regex, function (regex, field) {
+                    var val = p[field];
+
+                    if (!val)
+                        return false
+
+                    return val.match(regex)?true:false;
+                })
+                return found.indexOf(true) > -1
+            })
+        })
+
+    this.channel = this.API.channelFunctions.getDetailsForUser(this.channel);
 };
 
 inherits(YouTube, GenericProvider);
 
 YouTube.prototype.config = {
-    name: 'YouTube',
+    name: 'youtube',
     uniqueId: 'imdb_id',
     tabName: 'YouTube',
     type: 'tvshow',
 };
 
-var queryTorrents = function (filters) {
+YouTube.prototype.queryTorrents = function (filters) {
     var params = {};
     var genres = '';
     params.sort = 'seeds';
@@ -52,35 +84,51 @@ var queryTorrents = function (filters) {
         params.sort = filters.sorter;
     }
 
-    return this.videos.allUploads(this.channel)
+    return (Promise.all([this.playlists, this.channel]))
         .then(function (data) {
-            console.log(data)
-            debugger
-            return data
+            return {
+                playlists: data[0],
+                channel: data[1]
+            }
         })
         .catch(function (err) {
             console.error ('youtube', 'error', err)
         })
 };
 
-var formatElementForButter = function (data) {
-    var id = data.url.split('/').pop();
-    var updated = moment(data.updated_at);
+var getBestThumb = function (th) {
+    var res = ['maxres', 'high', 'standard', 'medium', 'default']
+
+    while (res.length) {
+        var r = res.shift();
+        if (th[r])
+            return th[r].url
+    }
+}
+
+var formatForButter = function(data) {
+    var channel = data.channel,
+        playlists = data.playlists;
+
+    var id = channel.channelId;
+    var updated = moment(channel.publishedAt);
     var year = updated.year();
-    var img = data.logo_url;
+    var img = channel.avatar.high.url;
+
     return {
+        results: [{
         type: 'show',
         _id: id,
-        imdb_id: 'youtube' +id,
-        tvdb_id: 'youtube-' + data.acronym,
-        title: data.title,
+        imdb_id: 'youtube-' + id,
+        tvdb_id: 'youtube-' + id,
+        title: channel.title,
         year: year,
         images: {
             banner: img,
             fanart: img,
             poster: img,
         },
-        slug: data.slug,
+        slug: id,
         rating: {
             hated: 0,
             loved: 0,
@@ -88,17 +136,10 @@ var formatElementForButter = function (data) {
             percentage: 0,
             watching: 0
         },
-        num_seasons: 4,
+            num_seasons: playlists.length,
         last_updated: updated.unix()
-    }
-};
-
-var formatForButter = function(data) {
-    console.log (data.map(formatElementForButter));
-
-    return {
-        results: data.map(formatElementForButter).reverse(),
-        hasMore: true
+        }],
+        hasMore: false
     }
 }
 
@@ -164,7 +205,7 @@ YouTube.prototype.extractIds = function (items) {
 };
 
 YouTube.prototype.fetch = function (filters) {
-    return queryTorrents(filters)
+    return this.queryTorrents(filters)
         .then(formatForButter);
 };
 

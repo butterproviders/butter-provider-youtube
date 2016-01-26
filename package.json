@@ -22,9 +22,11 @@
   },
   "homepage": "https://github.com/butterproviders/butter-provider-youtube#readme",
   "dependencies": {
+    "butter-provider": "^0.1.0",
     "defer-request": "0.0.2",
     "lodash": "^3.10.1",
     "moment": "^2.11.1",
+    "node-youtubeapi-simplifier": "^1.4.0",
     "q": "^1.4.1"
   }
 }

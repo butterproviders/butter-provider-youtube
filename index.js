@@ -13,7 +13,7 @@ var YouTube = function (args) {
     YouTube.super_.call(this);
 
     var that = this;
-    console.error ('args', args)
+    console.debug ('args', args)
     this.channel = args.channel; //&& delete(args.channel);
     this.apiKey  = args.apiKey;  //&& delete(args.apiKey);
     this.regex   = {}
@@ -218,7 +218,7 @@ YouTube.prototype.detail = function(id, oldData, debug) {
                 episodes: _.flatten(videos)
             })
         }).then (function (data){
-            console.error (data)
+            console.debug (data)
             return data;
         })
 }

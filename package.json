@@ -4,7 +4,7 @@
   "description": "A Butter provider for youtube media servers",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tape ./node_modules/butter-test-provider/tests/*"
   },
   "repository": {
     "type": "git",
@@ -28,5 +28,8 @@
     "moment": "^2.11.1",
     "node-youtubeapi-simplifier": "^1.4.0",
     "q": "^1.4.1"
+  },
+  "devDependencies": {
+    "butter-test-provider": "0.0.4"
   }
 }

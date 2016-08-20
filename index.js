@@ -57,7 +57,7 @@ YouTube.prototype.config = {
     name: 'youtube',
     uniqueId: 'imdb_id',
     tabName: 'YouTube',
-    type: Generic.Type.TVSHOW
+    type: Generic.TabType.TVSHOW
 };
 
 YouTube.prototype.queryTorrents = function (filters) {

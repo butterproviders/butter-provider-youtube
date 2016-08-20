@@ -1,6 +1,6 @@
 'use strict';
 
-var GenericProvider = require('butter-provider');
+var Generic = require('butter-provider');
 var querystring = require('querystring');
 var Q = require('q');
 var inherits = require('util').inherits;
@@ -51,13 +51,13 @@ var YouTube = function (args) {
     this.channel = this.API.channelFunctions.getDetailsForUser(this.channel);
 };
 
-inherits(YouTube, GenericProvider);
+inherits(YouTube, Generic);
 
 YouTube.prototype.config = {
     name: 'youtube',
     uniqueId: 'imdb_id',
     tabName: 'YouTube',
-    type: 'tvshow',
+    type: Generic.Type.TVSHOW
 };
 
 YouTube.prototype.queryTorrents = function (filters) {

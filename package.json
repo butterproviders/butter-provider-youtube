@@ -1,6 +1,6 @@
 {
   "name": "butter-provider-youtube",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A Butter provider for youtube media servers",
   "main": "index.js",
   "scripts": {
@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/butterproviders/butter-provider-youtube#readme",
   "dependencies": {
-    "butter-provider": "^0.4.0",
+    "butter-provider": "^0.5.0",
     "defer-request": "0.0.2",
     "lodash": "^3.10.1",
     "moment": "^2.11.1",
@@ -30,6 +30,6 @@
     "q": "^1.4.1"
   },
   "devDependencies": {
-    "butter-test-provider": "0.0.4"
+    "butter-test-provider": "^0.0.4"
   }
 }

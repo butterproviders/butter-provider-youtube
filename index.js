@@ -132,11 +132,8 @@ var formatForButter = function(data) {
         tvdb_id: 'youtube-' + id,
         title: channel.title,
         year: year,
-        images: {
-            banner: img,
-            fanart: img,
-            poster: img,
-        },
+        poster: img,
+        backdrop: img,
         slug: id,
         rating: {
             hated: 0,

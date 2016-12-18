@@ -89,7 +89,7 @@ YouTube.prototype.queryTorrents = function (filters) {
     }
 
     if (this.fetchData)
-        return this.fetchData;
+        return Promise.resolve(this.fetchData);
 
     return (Promise.all([this.playlists, this.channel]))
         .then(function (data) {

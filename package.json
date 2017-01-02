@@ -6,6 +6,10 @@
   "scripts": {
     "test": "tape ./node_modules/butter-provider/tests/*"
   },
+  "butter": {
+    "timeout": 20000,
+    "testArgs": "youtube?channel=TEDtalksDirector"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/butterproviders/butter-provider-youtube.git"
@@ -22,7 +26,7 @@
   },
   "homepage": "https://github.com/butterproviders/butter-provider-youtube#readme",
   "dependencies": {
-    "butter-provider": "^0.9.0",
+    "butter-provider": "^0.9.6",
     "defer-request": "0.0.2",
     "lodash": "^4.0.0",
     "moment": "^2.11.1",

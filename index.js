@@ -10,12 +10,11 @@ var moment = require('moment');
 var URL = 'https://media.youtube.de/public';
 
 var YouTube = function (args) {
-    YouTube.super_.call(this);
+    YouTube.super_.call(this, args);
 
     var that = this;
-    console.debug ('args', args)
-    this.channel = args.channel; //&& delete(args.channel);
-    this.apiKey  = args.apiKey;  //&& delete(args.apiKey);
+    this.channel = this.args.channel;
+    this.apiKey  = this.args.apiKey;
     this.regex   = {}
 
     Object.keys(args).forEach(function (k) {
@@ -27,9 +26,11 @@ var YouTube = function (args) {
         that.regex[m[1]] = new RegExp(args[k])
     })
 
+    console.log (args, this.channel, this.apiKey);
+
     this.API = require('node-youtubeapi-simplifier');
 
-    this.API.setup(this.apiKey || 'AIzaSyARQAHCYNuS7qi3mUxu0pgc4FjEBkOrx3U')
+    this.API.setup(this.apiKey)
     this.playlists = this.API.playlistFunctions.getPlaylistsForUser(this.channel)
         .then(function (playlists) {
             if (Object.keys(that.regex).length < 1)
@@ -56,7 +57,14 @@ inherits(YouTube, Provider);
 YouTube.prototype.config = {
     name: 'youtube',
     uniqueId: 'imdb_id',
-    tabName: 'YouTube'
+    tabName: 'YouTube',
+    args: {
+        channel: Provider.ArgType.STRING,
+        apiKey: Provider.ArgType.STRING
+    },
+    defaults: {
+        apiKey: 'AIzaSyARQAHCYNuS7qi3mUxu0pgc4FjEBkOrx3U'
+    }
 };
 
 YouTube.prototype.queryTorrents = function (filters) {
@@ -192,7 +200,7 @@ YouTube.prototype.getPlaylistsVideos = function (playlists) {
     }))
 }
 
-YouTube.prototype.detail = function(id, oldData, debug) {
+YouTube.prototype.detail = function(id, oldData) {
     var that = this,
         id = oldData.id,
         data = this.fetchData;
@@ -213,9 +221,6 @@ YouTube.prototype.detail = function(id, oldData, debug) {
                 genres: ['blah'],
                 episodes: _.flatten(videos)
             })
-        }).then (function (data){
-            console.debug (data)
-            return data;
         })
 }
 

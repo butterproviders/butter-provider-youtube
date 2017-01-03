@@ -74,10 +74,6 @@ YouTube.prototype.queryTorrents = function (filters) {
     params.sort = 'seeds';
     params.limit = '50';
 
-    if (filters.keywords) {
-        params.keywords = filters.keywords.replace(/\s/g, '% ');
-    }
-
     if (filters.genre) {
         //            filters.genres.forEach(function(g) {
         //                genres += '&genre[]='+g;
@@ -185,7 +181,19 @@ YouTube.prototype.extractIds = function (items) {
 
 YouTube.prototype.fetch = function (filters) {
     return this.queryTorrents(filters)
-        .then(formatForButter);
+        .then(formatForButter)
+        .then(function (data) {
+            if (! filters.keywords) {
+                return data;
+            }
+
+            var re = new RegExp(filters.keywords.replace(/\s/g, '\\s+'), 'gi')
+            if (re.match(data.results[0].title)) {
+                return data
+            }
+
+            return {results: [], hasMore: false}
+        })
 };
 
 YouTube.prototype.getPlaylistsVideos = function (playlists) {

@@ -56,7 +56,7 @@ inherits(YouTube, Provider);
 
 YouTube.prototype.config = {
     name: 'youtube',
-    uniqueId: 'imdb_id',
+    uniqueId: 'ytid',
     tabName: 'YouTube',
     args: {
         channel: Provider.ArgType.STRING,
@@ -133,24 +133,23 @@ var formatForButter = function(data) {
 
     return {
         results: [{
-        type: Provider.ItemType.TVSHOW,
-        _id: id,
-        imdb_id: 'youtube-' + id,
-        tvdb_id: 'youtube-' + id,
-        title: channel.title,
-        year: year,
-        poster: img,
-        backdrop: img,
-        slug: id,
-        rating: {
-            hated: 0,
-            loved: 0,
-            votes: 0,
-            percentage: 0,
-            watching: 0
-        },
+            type: Provider.ItemType.TVSHOW,
+            ytid: id,
+            title: channel.title,
+            synopsis: channel.description,
+            year: year,
+            poster: img,
+            backdrop: img,
+            slug: id,
+            rating: {
+                hated: 0,
+                loved: 0,
+                votes: 0,
+                percentage: 0,
+                watching: 0
+            },
             num_seasons: playlists.length,
-        last_updated: updated.unix()
+            last_updated: updated.unix()
         }],
         hasMore: false
     }
@@ -210,7 +209,6 @@ YouTube.prototype.detail = function(id, oldData) {
     return this.getPlaylistsVideos(data.playlists)
         .then(function (videos) {
             return _.extend (oldData, {
-                synopsis: data.title,
                 country: "",
                 network: "YouTube Media",
                 status: "finished",
@@ -218,7 +216,7 @@ YouTube.prototype.detail = function(id, oldData) {
                 runtime: 30,
                 last_updated: updated.unix(),
                 __v: 0,
-                genres: ['blah'],
+                genres: ['FIXME'],
                 episodes: _.flatten(videos)
             })
         })

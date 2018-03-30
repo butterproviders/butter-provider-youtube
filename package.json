@@ -4,7 +4,8 @@
   "description": "A Butter provider for youtube media servers",
   "main": "index.js",
   "scripts": {
-    "test": "tape ./node_modules/butter-provider/tests/*"
+    "test": "mocha ./node_modules/butter-provider/tests/*",
+    "lint": "eslint tests/** index.js"
   },
   "butter": {
     "timeout": 20000,
@@ -26,14 +27,14 @@
   },
   "homepage": "https://github.com/butterproviders/butter-provider-youtube#readme",
   "dependencies": {
-    "butter-provider": "^0.9.6",
+    "butter-provider": "butterproviders/butter-provider",
+    "debug": "^3.1.0",
     "defer-request": "0.0.2",
-    "lodash": "^4.0.0",
     "moment": "^2.11.1",
-    "node-youtubeapi-simplifier": "^1.4.0",
-    "q": "^1.4.1"
+    "node-youtubeapi-simplifier": "^1.4.0"
   },
   "devDependencies": {
+    "butter-test-provider": "butterproviders/butter-test-provider",
     "tape": "^4.5.1"
   }
 }

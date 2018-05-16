@@ -28,10 +28,10 @@
   "homepage": "https://github.com/butterproviders/butter-provider-youtube#readme",
   "dependencies": {
     "butter-provider": "butterproviders/butter-provider",
+    "dayjs": "^1.5.18",
     "debug": "^3.1.0",
     "defer-request": "0.0.2",
-    "moment": "^2.11.1",
-    "node-youtubeapi-simplifier": "^1.4.0"
+    "picotube": "^0.0.2"
   },
   "devDependencies": {
     "butter-test-provider": "butterproviders/butter-test-provider",

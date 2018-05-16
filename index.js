@@ -1,13 +1,12 @@
 'use strict';
 
 const Provider = require('butter-provider');
-const moment = require('moment');
-const API = require('node-youtubeapi-simplifier');
+const moment = require('dayjs')
+const PicoTube = require('picotube').default
 const debug = require('debug')('butter-provider-youtube')
 
 const defaultConfig = {
     name: 'youtube',
-    uniqueId: 'ytid',
     tabName: 'YouTube',
     argTypes: {
         channel: Provider.ArgType.STRING,
@@ -25,8 +24,8 @@ function flatten(e) {
     return e.reduce((a, c) => (a.concat(c)), [])
 }
 
-function getBestThumb(th) {
-    var res = [
+function getBestThumb(thumbnails) {
+    var standardResolutions = [
         'maxres',
         'high',
         'standard',
@@ -34,32 +33,29 @@ function getBestThumb(th) {
         'default'
     ]
 
-    while (res.length) {
-        var r = res.shift();
-        if (th[r]) {
-            return th[r].url
+    while (standardResolutions.length) {
+        const resolution = standardResolutions.shift();
+
+        if (thumbnails[resolution]) {
+            return thumbnails[resolution].url
         }
     }
 
     return null
 }
 
-function formatForButter(data) {
-    var channel = data.channel,
-        playlists = data.playlists;
-
-    var id = channel.channelId;
-    var updated = moment(channel.publishedAt);
-    var year = updated.year();
-    var img = getBestThumb(channel.avatar);
+function formatForButter({id, title, description, publishedAt, thumbnails, playlists}) {
+    const year = publishedAt.split('-')[0]
+    const img = getBestThumb(thumbnails)
 
     return {
         results: [
             {
                 type: Provider.ItemType.TVSHOW,
-                ytid: id,
-                title: channel.title,
-                synopsis: channel.description,
+                id: id,
+                title: title,
+                synopsis: description,
+                subtitle: [],
                 year: year,
                 poster: img,
                 backdrop: img,
@@ -72,7 +68,8 @@ function formatForButter(data) {
                     watching: 0
                 },
                 num_seasons: playlists.length,
-                last_updated: updated.unix()
+                last_updated: publishedAt,
+                playlists
             }
         ],
         hasMore: false
@@ -82,10 +79,11 @@ function formatForButter(data) {
 function generatePlaylistTorrents(pl) {
     debug('NOT IMPLEMENTED')
 
-    return pl
+    return {}
 }
 
-function formatPlaylistForButter(pl, idx, videos) {
+const formatPlaylistForButter = (playlist, idx, videos) => {
+    console.error(playlist)
     return videos.map((vid, vidx) => {
         var date = moment(vid.publishedAt);
 
@@ -105,12 +103,15 @@ function formatPlaylistForButter(pl, idx, videos) {
     })
 }
 
+const mergeSnippet = ({snippet, ...rest}) => Object.assign(rest, snippet)
+const extractItems = ({data}) => (data.items.map(mergeSnippet))
+
+
 module.exports = class YouTube extends Provider {
     constructor (args, config = defaultConfig) {
         super(args, config)
 
         this.channel = this.args.channel
-        this.apiKey = this.args.apiKey
         this.baseUrl = this.args.baseUrl
         this.regex = {}
 
@@ -124,40 +125,52 @@ module.exports = class YouTube extends Provider {
             this.regex[m[1]] = new RegExp(args[k])
         })
 
-        debug(args, this.channel, this.apiKey);
+        this.pico = new PicoTube(this.args.apiKey)
+        this.playlists = this.pico.channels({
+            forUsername: this.channel,
+            part: ['snippet']
+        }).then(extractItems).then((items) => {
+            this.channelInfo = items[0]
+            return this.channelInfo
+        }).then(channel => this.pico.playlists({
+            channelId: channel.id,
+            part: ['snippet']
+        })).then(extractItems)
+                             .then(this.processPlaylists.bind(this))
+                             .then(playlists => {
+                                 this.playlists = playlists
 
-        this.API = API
-
-        this.API.setup(this.apiKey)
-        this.playlists = this.API.playlistFunctions
-                             .getPlaylistsForUser(this.channel)
-                             .then((playlists) => {
-                                 if (Object.keys(this.regex).length < 1) {
-                                     return playlists;
-                                 }
-
-                                 return playlists.filter((p) => {
-                                     var found = Object.keys(this.regex).map((field) => {
-                                         var val = p[field];
-                                         let regex = this.regex[field]
-
-                                         if (!val) {
-                                             return false
-                                         }
-
-                                         return val.match(regex) ? true : false;
-                                     })
-
-                                     return found.indexOf(true) > -1
-                                 })
+                                 return playlists
                              })
+                             .then(playlists => Object.assign(this.channelInfo, {
+                                 playlists
+                             }))
+    }
 
-        this.channel = this.API.channelFunctions.getDetailsForUser(this.channel);
+    processPlaylists (playlists) {
+        if (Object.keys(this.regex).length < 1) {
+            return playlists;
+        }
+
+        return playlists.filter((playlist) => {
+            var found = Object.keys(this.regex).map((field) => {
+                var val = playlist.snippet[field];
+                let regex = this.regex[field]
+
+                if (!val) {
+                    return false
+                }
+
+                return val.match(regex) ? true : false;
+            })
+
+            return found.indexOf(true) > -1
+        })
     }
 
     queryTorrents (filters = {}) {
         var params = {};
-//        var genres = '';
+        //        var genres = '';
         params.sort = 'seeds';
         params.limit = '50';
 
@@ -178,25 +191,10 @@ module.exports = class YouTube extends Provider {
             params.sort = filters.sorter;
         }
 
-        if (this.fetchData) {
-            return Promise.resolve(this.fetchData);
-        }
-
-        return (Promise.all([
-            this.playlists,
-            this.channel
-        ]))
-            .then((data) => {
-                this.fetchData = {
-                    playlists: data[0],
-                    channel: data[1]
-                }
-
-                return this.fetchData
-            })
-            .catch((err) => {
-                debug('youtube', 'error', err)
-            })
+        return this.playlists
+                   .catch((err) => {
+                       debug('youtube', 'error', err.response.data.error)
+                   })
     }
 
     fetch(filters = {}) {
@@ -213,30 +211,38 @@ module.exports = class YouTube extends Provider {
                        }
 
                        return {results: [],
-                           hasMore: false}
+                               hasMore: false}
                    })
-    }
-
-    getPlaylistsVideos(playlists) {
-        return Promise.all(playlists.map((pl, idx) => this.API.playlistFunctions.getVideosForPlaylist(pl.playlistId)
-                       .then((videos) => (formatPlaylistForButter(pl, idx, videos)))))
     }
 
     detail(id, oldData) {
         var data = this.fetchData
         var updated = moment(oldData.updated)
 
-        return this.getPlaylistsVideos(data.playlists)
-                   .then((videos) => Object.assign(oldData, {
-                       country: '',
-                       network: 'YouTube Media',
-                       status: 'finished',
-                       num_seasons: data.playlists.length,
-                       runtime: 30,
-                       last_updated: updated.unix(),
-                       __v: 0,
-                       genres: ['FIXME'],
-                       episodes: flatten(videos)
-                   }))
+        return Promise.all(
+            this.playlists.map(playlist =>
+                this.pico.playlistItems({
+                    playlistId: playlist.id,
+                    part: ['snippet']
+                }).then(extractItems)
+                    .then(items => Object.assign(playlist, {items}))
+            )
+        ).then((playlists) => {
+            return Object.assign(oldData, {
+                country: '',
+                network: 'YouTube Media',
+                status: 'finished',
+                num_seasons: playlists.length,
+                runtime: 30,
+                last_updated: updated.unix(),
+                __v: 0,
+                genres: ['FIXME'],
+                seasons: playlists.map(({items, ...playlist}, idx) => (Object.assign(
+                    playlist, {order: idx}, {
+                        episodes: formatPlaylistForButter(oldData, idx, items)
+                    }
+                )))
+            })
+        })
     }
 }

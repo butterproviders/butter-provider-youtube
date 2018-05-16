@@ -1,6 +1,6 @@
 {
   "name": "butter-provider-youtube",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A Butter provider for youtube media servers",
   "main": "index.js",
   "scripts": {

@@ -51,10 +51,10 @@ function formatForButter({id, title, description, publishedAt, thumbnails, playl
     return {
         results: [
             {
-                type: Provider.ItemType.TVSHOW,
+                type: Provider.ItemType.TVSHOW2,
                 id: id,
                 title: title,
-                synopsis: description,
+                overview: description,
                 subtitle: [],
                 year: year,
                 poster: img,
@@ -76,19 +76,19 @@ function formatForButter({id, title, description, publishedAt, thumbnails, playl
     }
 }
 
-function generatePlaylistTorrents(pl) {
+function generateSources(pl) {
     debug('NOT IMPLEMENTED')
 
     return {}
 }
 
 const formatPlaylistForButter = (playlist, idx, videos) => {
-    console.error(playlist)
     return videos.map((vid, vidx) => {
         var date = moment(vid.publishedAt);
 
         return {
-            torrents: generatePlaylistTorrents(vid),
+            id: vid.id,
+            sources: generateSources(vid),
             watched: {
                 watched: false
             },
@@ -104,8 +104,7 @@ const formatPlaylistForButter = (playlist, idx, videos) => {
 }
 
 const mergeSnippet = ({snippet, ...rest}) => Object.assign(rest, snippet)
-const extractItems = ({data}) => (data.items.map(mergeSnippet))
-
+const extractItems = ({data}, fn = mergeSnippet) => (data.items.map(fn))
 
 module.exports = class YouTube extends Provider {
     constructor (args, config = defaultConfig) {
@@ -168,7 +167,7 @@ module.exports = class YouTube extends Provider {
         })
     }
 
-    queryTorrents (filters = {}) {
+    querySources (filters = {}) {
         var params = {};
         //        var genres = '';
         params.sort = 'seeds';
@@ -198,7 +197,7 @@ module.exports = class YouTube extends Provider {
     }
 
     fetch(filters = {}) {
-        return this.queryTorrents(filters)
+        return this.querySources(filters)
                    .then(formatForButter)
                    .then((data) => {
                        if (!filters.keywords) {
@@ -225,23 +224,36 @@ module.exports = class YouTube extends Provider {
                     playlistId: playlist.id,
                     part: ['snippet']
                 }).then(extractItems)
-                    .then(items => Object.assign(playlist, {items}))
+                    .then(items => Object.assign(playlist, {
+                        first_aired: playlist.publishedAt,
+                        items
+                    }))
             )
         ).then((playlists) => {
+            const first_aired = playlists.reduce(
+                (min, pl) => moment(pl.first_aired).isBefore(min) ? moment(pl.first_aired) : min,
+                moment()
+            )
+
             return Object.assign(oldData, {
                 country: '',
                 network: 'YouTube Media',
                 status: 'finished',
-                num_seasons: playlists.length,
                 runtime: 30,
                 last_updated: updated.unix(),
                 __v: 0,
                 genres: ['FIXME'],
-                seasons: playlists.map(({items, ...playlist}, idx) => (Object.assign(
-                    playlist, {order: idx}, {
-                        episodes: formatPlaylistForButter(oldData, idx, items)
-                    }
-                )))
+                first_aired,
+                seasons: playlists.map((
+                    {id, items, description, ...playlist}, idx) => (Object.assign(
+                        playlist, {
+                            id,
+                            order: idx,
+                            overview: description,
+                            episodes: formatPlaylistForButter(oldData, idx, items)
+                        }
+                    ))
+                )
             })
         })
     }

@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "butter-test-provider": "butterproviders/butter-test-provider",
+    "standard": "^11.0.1",
     "tape": "^4.5.1"
   }
 }

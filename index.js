@@ -77,23 +77,24 @@ function generateSources (pl) {
   return {}
 }
 
-const formatPlaylistForButter = (playlist, idx, videos) => {
-  return videos.map((vid, vidx) => {
-    var date = moment(vid.publishedAt)
+const formatPlaylistForButter = (playlist, idx, playlistItems) => {
+  return playlistItems.map((item, vidx) => {
+    var date = moment(item.publishedAt)
 
     return {
-      id: vid.id,
-      sources: generateSources(vid),
+      id: item.resourceId.videoId,
+      sources: generateSources(item),
       watched: {
         watched: false
       },
       first_aired: date.unix(),
       date_based: false,
-      overview: vid.description,
-      title: vid.title,
+      overview: item.description,
+      title: item.title,
+      poster: getBestThumb(item.thumbnails),
       episode: vidx + 1,
       season: idx + 1,
-      tvdb_id: vid.videoId
+      tvdb_id: item.videoId
     }
   })
 }

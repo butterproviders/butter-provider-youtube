@@ -166,10 +166,10 @@ module.exports = class YouTube extends Provider {
 
     if (filters.genre) {
       /* filters.genres.forEach(function(g) {
-               genres += '&genre[]='+g;
-               });
-               genres = genres.substring(0, genres.length - 1);
-               win.info('genres', genres); */
+         genres += '&genre[]='+g;
+         });
+         genres = genres.substring(0, genres.length - 1);
+         win.info('genres', genres); */
       params.genre = filters.genres[0]
     }
 

@@ -121,7 +121,7 @@ module.exports = class YouTube extends Provider {
     })
 
     this.pico = new PicoTube(this.args.apiKey)
-    this.playlists = this.pico.channels({
+    this.channelPromise = this.pico.channels({
       forUsername: this.channel,
       part: ['snippet']
     }).then(extractItems).then((items) => {
@@ -131,15 +131,10 @@ module.exports = class YouTube extends Provider {
       channelId: channel.id,
       part: ['snippet']
     })).then(extractItems)
-      .then(this.processPlaylists.bind(this))
-      .then(playlists => {
-        this.playlists = playlists
-
-        return playlists
-      })
-      .then(playlists => Object.assign(this.channelInfo, {
-        playlists
-      }))
+       .then(this.processPlaylists.bind(this))
+       .then(playlists => Object.assign(this.channelInfo, {
+         playlists
+       }))
   }
 
   processPlaylists (playlists) {
@@ -186,70 +181,74 @@ module.exports = class YouTube extends Provider {
       params.sort = filters.sorter
     }
 
-    return this.playlists
-      .catch((err) => {
-        debug('youtube', 'error', err.response.data.error)
-      })
+    return this.channelPromise
+               .catch((err) => {
+                 debug('youtube', 'error', err.response.data.error)
+               })
   }
 
   fetch (filters = {}) {
     return this.querySources(filters)
-      .then(formatForButter)
-      .then((data) => {
-        if (!filters.keywords) {
-          return data
-        }
+               .then(formatForButter)
+               .then((data) => {
+                 if (!filters.keywords) {
+                   return data
+                 }
 
-        var re = new RegExp(filters.keywords.replace(/\s/g, '\\s+'), 'gi')
-        if (re.match(data.results[0].title)) {
-          return data
-        }
+                 var re = new RegExp(filters.keywords.replace(/\s/g, '\\s+'), 'gi')
+                 if (re.match(data.results[0].title)) {
+                   return data
+                 }
 
-        return {results: [],
-          hasMore: false}
-      })
+                 return {results: [],
+                         hasMore: false}
+               })
   }
 
-  detail (id, oldData) {
+  detail (oldData) {
     var updated = moment(oldData.updated)
 
-    return Promise.all(
-      this.playlists.map(playlist =>
-        this.pico.playlistItems({
-          playlistId: playlist.id,
-          part: ['snippet']
-        }).then(extractItems)
-          .then(items => Object.assign(playlist, {
-            first_aired: playlist.publishedAt,
-            items
-          }))
-      )
-    ).then((playlists) => {
-      const first_aired = playlists.reduce(
-        (min, pl) => moment(pl.first_aired).isBefore(min) ? moment(pl.first_aired) : min,
-        moment()
-      )
+    return this.channelPromise
+               .then(channel => (
+                 Promise.all(
+                   channel.playlists.map(playlist =>
+                     this.pico.playlistItems({
+                       playlistId: playlist.id,
+                       part: ['snippet']
+                     }).then(extractItems)
+                         .then(items => Object.assign(playlist, {
+                           first_aired: playlist.publishedAt,
+                           items
+                         }))
+                   )
+                 ).then((playlists) => {
+                   const first_aired = playlists.reduce(
+                     (min, pl) => moment(pl.first_aired).isBefore(min) ? moment(pl.first_aired) : min,
+                     moment()
+                   )
 
-      return Object.assign(oldData, {
-        country: '',
-        network: 'YouTube Media',
-        status: 'finished',
-        runtime: 30,
-        last_updated: updated.unix(),
-        __v: 0,
-        genres: ['FIXME'],
-        first_aired,
-        seasons: playlists.map((
-          {id, items, description, ...playlist}, idx) => (Object.assign(
-          playlist, {
-            id,
-            order: idx,
-            overview: description,
-            episodes: formatPlaylistForButter(oldData, idx, items)
-          }
-        ))
-        )
-      })
-    })
+                   return Object.assign(oldData, {
+                     country: '',
+                     network: 'YouTube Media',
+                     status: 'finished',
+                     runtime: 30,
+                     last_updated: updated.unix(),
+                     __v: 0,
+                     genres: ['FIXME'],
+                     first_aired,
+                     seasons: playlists.map((
+                       {id, items, description, thumbnails, ...playlist}, idx) => (Object.assign(
+                         playlist, {
+                           id,
+                           order: idx,
+                           overview: description,
+                           episodes: formatPlaylistForButter(oldData, idx, items),
+                           poster: getBestThumb(thumbnails),
+                         }
+                       ))
+                     )
+                   })
+                 })
+               ))
   }
 }

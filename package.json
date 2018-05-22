@@ -9,7 +9,7 @@
   },
   "butter": {
     "timeout": 20000,
-    "testArgs": "youtube?channel=TEDtalksDirector"
+    "testArgs": "youtube?channel=midianinjafly&mode=shows&maxResults=3"
   },
   "repository": {
     "type": "git",

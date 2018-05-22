@@ -5,17 +5,31 @@ const moment = require('dayjs')
 const PicoTube = require('picotube').default
 const debug = require('debug')('butter-provider-youtube')
 
+const YoutubeMode = {
+  SHOWS: 'shows',
+  SEASONS: 'seasons'
+}
+
+const debugPromise = (context) => result => {
+  debug(context, result)
+  return result
+}
+
 const defaultConfig = {
   name: 'youtube',
   tabName: 'YouTube',
   argTypes: {
     channel: Provider.ArgType.STRING,
+    mode: Provider.ArgType.STRING,
     apiKey: Provider.ArgType.STRING,
-    baseUrl: Provider.ArgType.STRING
+    baseUrl: Provider.ArgType.STRING,
+    maxResults: Provider.ArgType.NUMBER
   },
   defaults: {
     apiKey: 'AIzaSyARQAHCYNuS7qi3mUxu0pgc4FjEBkOrx3U',
-    baseUrl: 'https://media.youtube.de/public'
+    baseUrl: 'https://media.youtube.de/public',
+    mode: YoutubeMode.SEASONS,
+    maxResults: 50
   }
 }
 
@@ -28,6 +42,10 @@ function getBestThumb (thumbnails) {
     'default'
   ]
 
+  if (!thumbnails) {
+    return null
+  }
+
   while (standardResolutions.length) {
     const resolution = standardResolutions.shift()
 
@@ -39,35 +57,36 @@ function getBestThumb (thumbnails) {
   return null
 }
 
-function formatForButter ({id, title, description, publishedAt, thumbnails, playlists}) {
+function formatForButter ({id, title, description, publishedAt = '', thumbnails, last_updated, playlists = []}) {
   const year = publishedAt.split('-')[0]
   const img = getBestThumb(thumbnails)
 
   return {
-    results: [
-      {
-        type: Provider.ItemType.TVSHOW2,
-        id: id,
-        title: title,
-        overview: description,
-        subtitle: [],
-        year: year,
-        poster: img,
-        backdrop: img,
-        slug: id,
-        rating: {
-          hated: 0,
-          loved: 0,
-          votes: 0,
-          percentage: 0,
-          watching: 0
-        },
-        num_seasons: playlists.length,
-        last_updated: publishedAt,
-        playlists
-      }
-    ],
-    hasMore: false
+    id,
+    title,
+    year,
+    type: Provider.ItemType.TVSHOW2,
+    overview: description,
+    subtitle: [],
+    genres: ['FIXME'],
+    country: '',
+    network: 'YouTube Media',
+    status: 'finished',
+    runtime: 30,
+    first_aired: moment(last_updated),
+    poster: img,
+    backdrop: img,
+    slug: id,
+    rating: {
+      hated: 0,
+      loved: 0,
+      votes: 0,
+      percentage: 0,
+      watching: 0
+    },
+    num_seasons: playlists.length,
+    last_updated: publishedAt,
+    playlists
   }
 }
 
@@ -77,7 +96,43 @@ function generateSources (pl) {
   return {}
 }
 
-const formatPlaylistForButter = (playlist, idx, playlistItems) => {
+const playlistItemsToInfo = (playlistItems) => {
+  const first_aired = playlistItems.reduce(
+    (min, pl) => moment(pl.first_aired).isBefore(min) ? moment(pl.first_aired) : min,
+    moment()
+  )
+
+  return {
+    __v: 0,
+    first_aired
+  }
+}
+
+const playlistItemToShow = ({items, description, ...playlist}) => {
+  return {
+    ...playlist,
+    overview: description,
+    seasons: [Object.assign({}, playlist, {
+      order: 0,
+      overview: description,
+      episodes: formatEpisodesForButter(0, items)
+    })]
+  }
+}
+
+const playlistItemsToSeasons = (playlistItems) => (
+  Object.assign({}, playlistItemsToInfo(playlistItems), {
+    seasons: playlistItems.map(({items, description, thumbnails, ...playlist}, idx) => (
+      Object.assign(playlist, {
+        order: idx,
+        overview: description,
+        episodes: formatEpisodesForButter(idx, items),
+        poster: getBestThumb(thumbnails)
+      })))
+  })
+)
+
+const formatEpisodesForButter = (idx, playlistItems) => {
   return playlistItems.map((item, vidx) => {
     var date = moment(item.publishedAt)
 
@@ -108,7 +163,11 @@ module.exports = class YouTube extends Provider {
 
     this.channel = this.args.channel
     this.baseUrl = this.args.baseUrl
+    this.mode = this.args.mode
     this.regex = {}
+
+    this._getPlaylistItems = this._getPlaylistItems.bind(this)
+    this._getPlaylistsItems = this._getPlaylistsItems.bind(this)
 
     Object.keys(args).forEach((k) => {
       var m = k.match('(.*)Regex')
@@ -120,6 +179,7 @@ module.exports = class YouTube extends Provider {
       this.regex[m[1]] = new RegExp(args[k])
     })
 
+    debug('loading channel info', this.channel)
     this.pico = new PicoTube(this.args.apiKey)
     this.channelPromise = this.pico.channels({
       forUsername: this.channel,
@@ -129,8 +189,10 @@ module.exports = class YouTube extends Provider {
       return this.channelInfo
     }).then(channel => this.pico.playlists({
       channelId: channel.id,
-      part: ['snippet']
+      maxResults: this.args.maxResults,
+      part: ['snippet', 'contentDetails']
     })).then(extractItems)
+      .then(playlists => playlists.filter(playlist => playlist.contentDetails.itemCount))
       .then(this.processPlaylists.bind(this))
       .then(playlists => Object.assign(this.channelInfo, {
         playlists
@@ -183,72 +245,73 @@ module.exports = class YouTube extends Provider {
 
     return this.channelPromise
       .catch((err) => {
-        debug('youtube', 'error', err.response.data.error)
+        debug('youtube', 'error', err)
       })
   }
 
   fetch (filters = {}) {
     return this.querySources(filters)
-      .then(formatForButter)
-      .then((data) => {
-        if (!filters.keywords) {
-          return data
-        }
+      .then(channelInfo => {
+        switch (this.mode) {
+          case YoutubeMode.SHOWS:
+            debug('shows mode', channelInfo.playlists[0])
+            return {
+              results: channelInfo.playlists.map(
+                playlist => formatForButter(
+                  Object.assign({}, channelInfo, playlist))),
+              hasMore: true
+            }
 
-        var re = new RegExp(filters.keywords.replace(/\s/g, '\\s+'), 'gi')
-        if (re.match(data.results[0].title)) {
-          return data
+          case YoutubeMode.SEASONS:
+          default:
+            debug('seasons mode')
+            return {
+              results: [formatForButter(channelInfo)],
+              hasMore: false
+            }
         }
-
-        return {results: [],
-          hasMore: false}
       })
   }
 
-  detail (oldData) {
-    var updated = moment(oldData.updated)
+  _getPlaylistItems (playlist) {
+    return this.pico.playlistItems({
+      playlistId: playlist.id,
+      maxResults: this.args.maxResults,
+      part: ['snippet']
+    }).then(extractItems)
+      .then(items => Object.assign(playlist, {
+        first_aired: playlist.publishedAt,
+        items
+      }))
+  }
 
-    return this.channelPromise
-      .then(channel => (
-        Promise.all(
-          channel.playlists.map(playlist =>
-            this.pico.playlistItems({
-              playlistId: playlist.id,
-              part: ['snippet']
-            }).then(extractItems)
-              .then(items => Object.assign(playlist, {
-                first_aired: playlist.publishedAt,
-                items
-              }))
-          )
-        ).then((playlists) => {
-          const first_aired = playlists.reduce(
-            (min, pl) => moment(pl.first_aired).isBefore(min) ? moment(pl.first_aired) : min,
-            moment()
-          )
+  _getPlaylistsItems (channel) {
+    return Promise.all(channel.playlists.map(this._getPlaylistItems)
+    )
+  }
 
-          return Object.assign(oldData, {
-            country: '',
-            network: 'YouTube Media',
-            status: 'finished',
-            runtime: 30,
-            last_updated: updated.unix(),
-            __v: 0,
-            genres: ['FIXME'],
-            first_aired,
-            seasons: playlists.map((
-              {id, items, description, thumbnails, ...playlist}, idx) => (Object.assign(
-              playlist, {
-                id,
-                order: idx,
-                overview: description,
-                episodes: formatPlaylistForButter(oldData, idx, items),
-                poster: getBestThumb(thumbnails)
-              }
-            ))
-            )
+  detail (id, oldData) {
+    switch (this.mode) {
+      case YoutubeMode.SHOWS:
+
+        debug('details', oldData)
+
+        return this._getPlaylistItems(oldData)
+          .then(playlistItemToShow)
+          .then(detail => {
+            let ret = Object.assign({}, oldData, detail)
+            delete (ret.playlists)
+            delete (ret.items)
+
+            return ret
           })
-        })
-      ))
+          .then(debugPromise('THE END'))
+      default:
+        return this.channelPromise
+          .then(this._getPlaylistsItems)
+          .then(playlistItemsToSeasons)
+          .then(detail => Object.assign({}, oldData, detail))
+          .then(debugPromise('default'))
+    }
   }
 }

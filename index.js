@@ -280,7 +280,6 @@ module.exports = class YouTube extends Provider {
       part: ['snippet']
     }).then(extractItems)
       .then(items => Object.assign(playlist, {
-        first_aired: playlist.publishedAt,
         items
       }))
   }

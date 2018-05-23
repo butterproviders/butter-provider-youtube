@@ -245,7 +245,7 @@ module.exports = class YouTube extends Provider {
 
     return this.channelPromise
       .catch((err) => {
-        debug('youtube', 'error', err)
+        debug('youtube', 'error', err.response.data)
       })
   }
 

@@ -66,7 +66,7 @@ function formatForButter ({id, title, description, publishedAt = '', thumbnails,
     title,
     year,
     type: Provider.ItemType.TVSHOW2,
-    overview: description,
+    overview: description || 'no description found',
     subtitle: [],
     genres: ['FIXME'],
     country: '',
@@ -108,7 +108,7 @@ const playlistItemsToInfo = (playlistItems) => {
   }
 }
 
-const playlistItemToShow = ({items, description, ...playlist}) => {
+const playlistItemToShow = ({items, description = 'no description provided', ...playlist}) => {
   return {
     ...playlist,
     overview: description,

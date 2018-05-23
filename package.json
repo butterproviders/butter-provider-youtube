@@ -31,7 +31,7 @@
     "dayjs": "^1.5.18",
     "debug": "^3.1.0",
     "defer-request": "0.0.2",
-    "picotube": "^0.0.2"
+    "picotube": "^0.0.5"
   },
   "devDependencies": {
     "butter-test-provider": "butterproviders/butter-test-provider",

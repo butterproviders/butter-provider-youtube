@@ -90,11 +90,11 @@ function formatForButter ({id, title, description, publishedAt = '', thumbnails,
   }
 }
 
-function generateSources (pl) {
-  debug('NOT IMPLEMENTED')
-
-  return {}
-}
+const generateSources = (pl) => ({
+  [Provider.QualityType.DEFAULT]: {
+    url: `yt://pl.ressourceId.videoId`
+  }
+})
 
 const playlistItemsToInfo = (playlistItems) => {
   const first_aired = playlistItems.reduce(

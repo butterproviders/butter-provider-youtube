@@ -191,7 +191,7 @@ module.exports = class YouTube extends Provider {
     })
   }
 
-  capturePageTokens(response) {
+  capturePageTokens (response) {
     const {data} = response
 
     const last = this.pageTokens[this.pageTokens.length - 1]
@@ -258,18 +258,18 @@ module.exports = class YouTube extends Provider {
     debug('ytArgs', ytArgs)
 
     return this.channelPromise
-               .then(channel => this.pico.playlists({
-                 ...ytArgs,
-                 channelId: channel.id,
-               }))
-               .then(this.capturePageTokens.bind(this))
-               .then(extractItems)
-               .then(playlists => playlists.filter(playlist => playlist.contentDetails.itemCount))
-               .then(this.processPlaylists.bind(this))
-               .then(playlists => Object.assign(this.channelInfo, {
-                 playlists
-               }))
-               .catch((err) => {
+      .then(channel => this.pico.playlists({
+        ...ytArgs,
+        channelId: channel.id
+      }))
+      .then(this.capturePageTokens.bind(this))
+      .then(extractItems)
+      .then(playlists => playlists.filter(playlist => playlist.contentDetails.itemCount))
+      .then(this.processPlaylists.bind(this))
+      .then(playlists => Object.assign(this.channelInfo, {
+        playlists
+      }))
+      .catch((err) => {
         debug('youtube', 'error', err.response.data)
       })
   }

@@ -4,8 +4,8 @@
   "description": "A Butter provider for youtube media servers",
   "main": "index.js",
   "scripts": {
-    "test": "mocha ./node_modules/butter-provider/tests/*",
-    "lint": "standard --env mocha tests/** index.js"
+    "test": "mocha --ui bdd --require babel-core/register --require babel-polyfill --recursive node_modules/butter-provider/tests/*.js",
+    "lint": "eslint tests/** index.js"
   },
   "butter": {
     "timeout": 20000,
@@ -33,6 +33,13 @@
     "picotube": "^0.0.5"
   },
   "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-function-bind": "^6.22.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-register": "^6.26.0",
     "butter-test-provider": "butterproviders/butter-test-provider",
     "mocha": "^5.2.0",
     "standard": "^11.0.1"

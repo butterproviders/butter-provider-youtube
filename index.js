@@ -166,6 +166,7 @@ module.exports = class YouTube extends Provider {
     this.mode = this.args.mode
     this.regex = {}
 
+    this.pageTokens = [null]
     this._getPlaylistItems = this._getPlaylistItems.bind(this)
     this._getPlaylistsItems = this._getPlaylistsItems.bind(this)
 
@@ -187,16 +188,18 @@ module.exports = class YouTube extends Provider {
     }).then(extractItems).then((items) => {
       this.channelInfo = items[0]
       return this.channelInfo
-    }).then(channel => this.pico.playlists({
-      channelId: channel.id,
-      maxResults: this.args.maxResults,
-      part: ['snippet', 'contentDetails']
-    })).then(extractItems)
-      .then(playlists => playlists.filter(playlist => playlist.contentDetails.itemCount))
-      .then(this.processPlaylists.bind(this))
-      .then(playlists => Object.assign(this.channelInfo, {
-        playlists
-      }))
+    })
+  }
+
+  capturePageTokens(response) {
+    const {data} = response
+
+    const last = this.pageTokens[this.pageTokens.length - 1]
+    if (last !== data.nextPageToken) {
+      this.pageTokens.push(data.nextPageToken)
+    }
+
+    return response
   }
 
   processPlaylists (playlists) {
@@ -221,7 +224,12 @@ module.exports = class YouTube extends Provider {
   }
 
   querySources (filters = {}) {
-    var params = {}
+    let ytArgs = {
+      maxResults: this.args.maxResults,
+      part: ['snippet', 'contentDetails']
+    }
+
+    let params = {}
     //        var genres = '';
     params.sort = 'seeds'
     params.limit = '50'
@@ -243,8 +251,25 @@ module.exports = class YouTube extends Provider {
       params.sort = filters.sorter
     }
 
+    if (filters.page && this.pageTokens[filters.page]) {
+      ytArgs.pageToken = this.pageTokens[filters.page]
+    }
+
+    debug('ytArgs', ytArgs)
+
     return this.channelPromise
-      .catch((err) => {
+               .then(channel => this.pico.playlists({
+                 ...ytArgs,
+                 channelId: channel.id,
+               }))
+               .then(this.capturePageTokens.bind(this))
+               .then(extractItems)
+               .then(playlists => playlists.filter(playlist => playlist.contentDetails.itemCount))
+               .then(this.processPlaylists.bind(this))
+               .then(playlists => Object.assign(this.channelInfo, {
+                 playlists
+               }))
+               .catch((err) => {
         debug('youtube', 'error', err.response.data)
       })
   }

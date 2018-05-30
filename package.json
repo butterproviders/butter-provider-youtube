@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha --ui bdd --require babel-core/register --require babel-polyfill --recursive node_modules/butter-provider/tests/*.js",
-    "lint": "eslint tests/** index.js"
+    "lint": "standard --env mocha tests/** index.js"
   },
   "butter": {
     "timeout": 20000,

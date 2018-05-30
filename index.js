@@ -57,7 +57,15 @@ function getBestThumb (thumbnails) {
   return null
 }
 
-function formatForButter ({id, title, description, publishedAt = '', thumbnails, last_updated, playlists = []}) {
+function formatForButter ({
+  id,
+  title,
+  description,
+  publishedAt = '',
+  thumbnails,
+  last_updated, // eslint-disable-line camelcase
+  playlists = []
+}) {
   const year = publishedAt.split('-')[0]
   const img = getBestThumb(thumbnails)
 
@@ -97,7 +105,7 @@ const generateSources = (pl) => ({
 })
 
 const playlistItemsToInfo = (playlistItems) => {
-  const first_aired = playlistItems.reduce(
+  const first_aired = playlistItems.reduce( // eslint-disable-line camelcase
     (min, pl) => moment(pl.first_aired).isBefore(min) ? moment(pl.first_aired) : min,
     moment()
   )

@@ -260,8 +260,8 @@ module.exports = class YouTube extends Provider {
     }
 
     if (filters.page) {
-      if (! this.pageTokens[filters.page]) {
-        return Promise.reject(`asked for out of order page: ${filters.page}, ${this.pageTokens}`)
+      if (!this.pageTokens[filters.page]) {
+        return Promise.reject(new Error(`asked for out of order page: ${filters.page}, ${this.pageTokens}`))
       }
       ytArgs.pageToken = this.pageTokens[filters.page]
     }

@@ -240,7 +240,7 @@ module.exports = class YouTube extends Provider {
 
   querySources (filters = {}) {
     let ytArgs = {
-      maxResults: filters.limit || this.args.maxResults,
+      maxResults: filters.limit || 50,
       part: ['snippet', 'contentDetails']
     }
 

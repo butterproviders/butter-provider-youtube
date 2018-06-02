@@ -210,6 +210,13 @@ module.exports = class YouTube extends Provider {
     return response
   }
 
+  getPlaylists (ytArgs, channel) {
+    return this.pico.playlists({
+      ...ytArgs,
+      channelId: channel.id
+    }).then(this.capturePageTokens.bind(this))
+  }
+
   processPlaylists (playlists) {
     if (Object.keys(this.regex).length < 1) {
       return playlists
@@ -269,11 +276,7 @@ module.exports = class YouTube extends Provider {
     debug('ytArgs', ytArgs, filters)
 
     return this.channelPromise
-      .then(channel => this.pico.playlists({
-        ...ytArgs,
-        channelId: channel.id
-      }))
-      .then(this.capturePageTokens.bind(this))
+      .then(this.getPlaylists.bind(this, ytArgs))
       .then(extractItems)
       .then(playlists => playlists.filter(playlist => playlist.contentDetails.itemCount))
       .then(this.processPlaylists.bind(this))

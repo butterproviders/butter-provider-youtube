@@ -259,7 +259,10 @@ module.exports = class YouTube extends Provider {
       params.sort = filters.sorter
     }
 
-    if (filters.page && this.pageTokens[filters.page]) {
+    if (filters.page) {
+      if (! this.pageTokens[filters.page]) {
+        return Promise.reject(`asked for out of order page: ${filters.page}, ${this.pageTokens}`)
+      }
       ytArgs.pageToken = this.pageTokens[filters.page]
     }
 

@@ -233,7 +233,7 @@ module.exports = class YouTube extends Provider {
 
   querySources (filters = {}) {
     let ytArgs = {
-      maxResults: this.args.maxResults,
+      maxResults: filters.limit || this.args.maxResults,
       part: ['snippet', 'contentDetails']
     }
 
@@ -263,7 +263,7 @@ module.exports = class YouTube extends Provider {
       ytArgs.pageToken = this.pageTokens[filters.page]
     }
 
-    debug('ytArgs', ytArgs)
+    debug('ytArgs', ytArgs, filters)
 
     return this.channelPromise
       .then(channel => this.pico.playlists({

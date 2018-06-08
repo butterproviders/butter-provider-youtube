@@ -268,6 +268,21 @@ module.exports = class YouTube extends Provider {
 
     if (filters.page) {
       if (!this.pageTokens[filters.page]) {
+        let missingPages = filters.page - this.pageTokens.length + 1
+        let lastPromise = Promise.resolve()
+
+        debug(`super slow path, getting all ${missingPages} missing pages`)
+
+        while (missingPages) {
+          lastPromise = lastPromise.then(
+            this.channelPromise
+              .then(this.getPlaylists.bind(this, Object.assign({
+                pageToken: this.pageTokens[this.pageTokens.length - 1]
+              }, ytArgs)))
+          )
+          missingPages -= 1
+        }
+
         return Promise.reject(new Error(`asked for out of order page: ${filters.page}, ${this.pageTokens}`))
       }
       ytArgs.pageToken = this.pageTokens[filters.page]

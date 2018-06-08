@@ -98,9 +98,9 @@ function formatForButter ({
   }
 }
 
-const generateSources = (pl) => ({
+const generateSources = (item) => ({
   [Provider.QualityType.DEFAULT]: {
-    url: `yt://pl.ressourceId.videoId`
+    url: `https://www.youtube.com/watch?v=${item.resourceId.videoId}`
   }
 })
 

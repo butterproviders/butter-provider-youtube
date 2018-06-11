@@ -155,7 +155,7 @@ const formatEpisodesForButter = (idx, playlistItems) => {
       overview: item.description,
       title: item.title,
       poster: getBestThumb(item.thumbnails),
-      episode: vidx + 1,
+      order: vidx + 1,
       season: idx + 1,
       tvdb_id: item.videoId
     }

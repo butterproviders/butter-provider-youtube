@@ -121,7 +121,7 @@ const playlistItemToShow = ({items, description = 'no description provided', ...
     ...playlist,
     overview: description,
     seasons: [Object.assign({}, playlist, {
-      order: 0,
+      order: 1,
       overview: description,
       episodes: formatEpisodesForButter(0, items)
     })]
@@ -132,7 +132,7 @@ const playlistItemsToSeasons = (playlistItems) => (
   Object.assign({}, playlistItemsToInfo(playlistItems), {
     seasons: playlistItems.map(({items, description, thumbnails, ...playlist}, idx) => (
       Object.assign(playlist, {
-        order: idx,
+        order: idx + 1,
         overview: description,
         episodes: formatEpisodesForButter(idx, items),
         poster: getBestThumb(thumbnails)
